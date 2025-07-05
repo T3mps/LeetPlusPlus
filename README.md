@@ -19,9 +19,6 @@ LeetPlusPlus provides a comprehensive local development environment that seamles
 - 🟢 Easy problems displayed in green
 - 🟡 Medium problems displayed in yellow  
 - 🔴 Hard problems displayed in red
-- Fixed navigation bar with exit option always visible
-- Scrollable problem list for large collections
-- Clean, modern interface with proper windowing
 
 **Intelligent Code Generation** - Automatic STL type prefixing, smart include detection based on method signatures, and template-based code generation.
 
@@ -95,7 +92,7 @@ Or run directly:
 ```
 
 **Navigation controls:**
-- UP/DOWN Arrow keys to navigate the problem list
+- ↑/↓ Arrow keys to navigate the problem list
 - Enter to execute selected problem
 - ESC or Q to exit
 - Page Up/Down for faster scrolling (when list exceeds window size)
@@ -164,20 +161,6 @@ void TestProblem42()
 }
 ```
 
-## Architecture
-
-### System Components
-
-The framework consists of four primary subsystems working in concert:
-
-**Problem Generation Engine** - Python-based system that parses LeetCode method signatures, generates C++ templates, and manages project configuration updates.
-
-**Solution Registry** - Compile-time registration system that automatically discovers and manages all problem solutions through template metaprogramming.
-
-**Testing Framework** - Comprehensive assertion library with support for primitive types, STL containers, and custom data structures, providing detailed failure diagnostics.
-
-**User Interface Layer** - PDCurses-based terminal interface offering responsive navigation, color-coded visual feedback, and real-time output capture.
-
 ## Advanced Configuration
 
 ### Custom Problem Templates
@@ -193,15 +176,6 @@ The modular architecture facilitates extensions through well-defined interfaces:
 - Create additional problem metadata fields in the generation system
 - Integrate external tools through the Premake action system
 
-## Performance Considerations
-
-The framework prioritizes developer productivity while maintaining runtime efficiency:
-
-- Template-based registration incurs no runtime overhead
-- UI rendering optimizes for minimal screen updates
-- Test execution captures output efficiently through stream redirection
-- Problem discovery occurs at compile time through static initialization
-
 ## Troubleshooting
 
 ### Common Issues
@@ -212,11 +186,6 @@ The framework prioritizes developer productivity while maintaining runtime effic
 
 **UI Display Issues** - Confirm PDCurses is properly linked and terminal supports required capabilities.
 
-### Debug Mode
-
-Enable verbose output for troubleshooting:
-```bash
-./LeetPlusPlus --debug
 ```
 
 ## Contributing
