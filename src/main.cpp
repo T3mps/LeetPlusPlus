@@ -20,20 +20,6 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    for (int i = 1; i < argc; ++i)
-    {
-        std::string arg = argv[i];if (arg == "--help" || arg == "-h")
-        {
-            std::cout << "LeetCode Practice Framework\n";
-            std::cout << "Usage: " << argv[0] << " [options]\n";
-            std::cout << "Options:\n";
-            std::cout << "  --no-tui, -t    Use console mode instead of TUI\n";
-            std::cout << "  --help, -h      Show this help message\n";
-            return 0;
-        }
-    }
-
-    
     UI::Application app;
     if (app.Initialize())
     {

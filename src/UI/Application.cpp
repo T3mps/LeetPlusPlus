@@ -240,23 +240,91 @@ namespace UI
         }
     }
 
-    // Custom ProblemRunner window class
+    // Custom ProblemRunner window class  
     class ProblemRunner : public Window
     {
     private:
-        std::vector<std::string> m_Output;
+        struct OutputLine
+        {
+            std::string text;
+            int colorPair;
+            bool bold;
+        };
+        std::vector<OutputLine> m_Output;
+        int m_ScrollPos;
         
     public:
-        ProblemRunner(int height, int width, int y, int x) : Window(height, width, y, x) {}
+        ProblemRunner(int height, int width, int y, int x) : Window(height, width, y, x), m_ScrollPos(-1) {} // -1 indicates initial state
         
         void AddOutput(const std::string& line)
         {
-            m_Output.push_back(line);
+            OutputLine outputLine;
+            outputLine.text = line;
+            outputLine.colorPair = 0; // Default color
+            outputLine.bold = false;
+            
+            // Determine color and styling based on content
+            if (line.find("[PASS]") != std::string::npos)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Success);
+            }
+            else if (line.find("[FAIL]") != std::string::npos)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Error);
+                outputLine.bold = true;  // Make failures stand out
+            }
+            else if (line.find("All tests passed!") != std::string::npos)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Success);
+                outputLine.bold = true;
+            }
+            else if (line.find("tests failed") != std::string::npos)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Error);
+                outputLine.bold = true;
+            }
+            else if (line.find("Testing ") == 0 || line.find("Running problem") == 0)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Info);
+                outputLine.bold = true;
+            }
+            else if (line.find("Test Case:") == 0)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Warning);
+                outputLine.bold = true;
+            }
+            else if (line.find("========") != std::string::npos)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Info);
+            }
+            else if (line.find("Problem #") == 0)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::TitleBar);
+                outputLine.bold = true;
+            }
+            else if (line.find("Expected:") != std::string::npos || line.find("Actual:") != std::string::npos)
+            {
+                outputLine.colorPair = static_cast<int>(ColorPair::Warning);
+            }
+            else if (line.find("Passed ") == 0)
+            {
+                outputLine.bold = true;  // Summary line
+            }
+            
+            m_Output.push_back(outputLine);
+            
+            // Auto-scroll to bottom when adding new content only if we haven't scrolled manually
+            if (m_ScrollPos == -1 || m_ScrollPos == std::max(0, (int)m_Output.size() - 1 - (m_hasBorder ? m_height - 2 : m_height)))
+            {
+                int maxLines = m_hasBorder ? m_height - 2 : m_height;
+                m_ScrollPos = std::max(0, (int)m_Output.size() - maxLines);
+            }
         }
         
         void ClearOutput()
         {
             m_Output.clear();
+            m_ScrollPos = -1; // Reset to initial state
         }
         
         virtual void Draw() override
@@ -267,12 +335,80 @@ namespace UI
             int startX = m_hasBorder ? 1 : 0;
             int maxLines = m_hasBorder ? m_height - 2 : m_height;
             
-            int startLine = std::max(0, (int)m_Output.size() - maxLines);
-            
-            for (int i = 0; i < maxLines && (startLine + i) < m_Output.size(); ++i)
+            // Initialize scroll position if needed
+            if (m_ScrollPos == -1 && m_Output.size() > 0)
             {
-                mvwprintw(m_window, startY + i, startX, "%s", m_Output[startLine + i].c_str());
+                m_ScrollPos = std::max(0, (int)m_Output.size() - maxLines);
             }
+            
+            // Ensure scroll position is valid
+            int actualScrollPos = m_ScrollPos == -1 ? 0 : m_ScrollPos;
+            
+            for (int i = 0; i < maxLines && (actualScrollPos + i) < m_Output.size(); ++i)
+            {
+                const OutputLine& line = m_Output[actualScrollPos + i];
+                
+                // Apply color and bold attributes
+                if (line.colorPair > 0)
+                {
+                    wattron(m_window, COLOR_PAIR(line.colorPair));
+                }
+                if (line.bold)
+                {
+                    wattron(m_window, A_BOLD);
+                }
+                
+                // Ensure we don't overflow the window width
+                int maxWidth = m_hasBorder ? m_width - 2 : m_width;
+                std::string displayText = line.text;
+                if ((int)displayText.length() > maxWidth)
+                {
+                    displayText = displayText.substr(0, maxWidth - 3) + "...";
+                }
+                
+                mvwprintw(m_window, startY + i, startX, "%s", displayText.c_str());
+                
+                // Remove attributes
+                if (line.bold)
+                {
+                    wattroff(m_window, A_BOLD);
+                }
+                if (line.colorPair > 0)
+                {
+                    wattroff(m_window, COLOR_PAIR(line.colorPair));
+                }
+            }
+            
+            // Draw scroll indicators if needed
+            if (m_hasBorder)
+            {
+                if (actualScrollPos > 0)
+                {
+                    mvwaddch(m_window, 0, m_width - 2, ACS_UARROW);
+                }
+                if (actualScrollPos + maxLines < (int)m_Output.size())
+                {
+                    mvwaddch(m_window, m_height - 1, m_width - 2, ACS_DARROW);
+                }
+            }
+        }
+        
+        void ScrollUp(int lines = 1)
+        {
+            m_ScrollPos = std::max(0, m_ScrollPos - lines);
+        }
+        
+        void ScrollDown(int lines = 1)
+        {
+            int maxLines = m_hasBorder ? m_height - 2 : m_height;
+            int maxScroll = std::max(0, (int)m_Output.size() - maxLines);
+            m_ScrollPos = std::min(maxScroll, m_ScrollPos + lines);
+        }
+        
+        bool CanScroll() const
+        {
+            int maxLines = m_hasBorder ? m_height - 2 : m_height;
+            return (int)m_Output.size() > maxLines;
         }
     };
 
@@ -306,6 +442,42 @@ namespace UI
                 case '\n':
                 case KEY_ENTER:
                     m_mainMenu->ExecuteSelected();
+                    return true;
+            }
+        }
+        else if (m_problemRunner && m_problemRunner->IsVisible())
+        {
+            auto* runner = static_cast<ProblemRunner*>(m_problemRunner.get());
+            switch (key)
+            {
+                case KEY_UP:
+                    runner->ScrollUp();
+                    runner->Draw();
+                    runner->Refresh();
+                    return true;
+                    
+                case KEY_DOWN:
+                    runner->ScrollDown();
+                    runner->Draw();
+                    runner->Refresh();
+                    return true;
+                    
+                case KEY_PPAGE:  // Page Up
+                    runner->ScrollUp(10);
+                    runner->Draw();
+                    runner->Refresh();
+                    return true;
+                    
+                case KEY_NPAGE:  // Page Down
+                    runner->ScrollDown(10);
+                    runner->Draw();
+                    runner->Refresh();
+                    return true;
+                    
+                case '\n':
+                case KEY_ENTER:
+                case ' ':  // Space bar
+                    ShowMainMenu();
                     return true;
             }
         }
@@ -420,12 +592,12 @@ namespace UI
         }
         
         runner->AddOutput("");
-        runner->AddOutput("Press any key to continue...");
+        runner->AddOutput("Press SPACE/ENTER to return to menu (UP/DOWN arrows to scroll)");
         runner->Draw();
         runner->Refresh();
         
-        getch();
-        ShowMainMenu();
+        // Keep the problem runner active to handle scrolling
+        // The main event loop in Run() will handle the key presses
     }
     
     void Application::DrawLegend()

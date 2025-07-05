@@ -95,7 +95,7 @@ Or run directly:
 ```
 
 **Navigation controls:**
-- ↑/↓ Arrow keys to navigate the problem list
+- UP/DOWN Arrow keys to navigate the problem list
 - Enter to execute selected problem
 - ESC or Q to exit
 - Page Up/Down for faster scrolling (when list exceeds window size)
