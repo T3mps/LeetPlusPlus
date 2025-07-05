@@ -1,0 +1,60 @@
+{
+  "9": {
+    "title": "Palindrome Number",
+    "signature": "bool isPalindrome(int x)",
+    "difficulty": "Easy",
+    "topics": [
+      "Math"
+    ],
+    "companies": [
+      "Amazon",
+      "Apple"
+    ],
+    "created": "2025-07-05T11:28:29.712635",
+    "filename": "9_Palindrome_Number.h"
+  },
+  "70": {
+    "title": "Climbing Stairs",
+    "signature": "int climbStairs(int n)",
+    "difficulty": "Easy",
+    "topics": [
+      "Dynamic Programming"
+    ],
+    "companies": [
+      "Amazon",
+      "Adobe"
+    ],
+    "created": "2025-07-05T11:27:31.691859",
+    "filename": "70_Climbing_Stairs.h"
+  },
+  "88": {
+    "title": "Merge Sorted Array",
+    "signature": "void merge(vector<int>& nums1, int m, vector<int>& nums2, int n)",
+    "difficulty": "Easy",
+    "topics": [
+      "Array",
+      "Two Pointers"
+    ],
+    "companies": [
+      "Microsoft",
+      "Facebook"
+    ],
+    "created": "2025-07-05T11:27:44.451300",
+    "filename": "88_Merge_Sorted_Array.h"
+  },
+  "125": {
+    "title": "Valid Palindrome",
+    "signature": "bool isPalindrome(string s)",
+    "difficulty": "Easy",
+    "topics": [
+      "Two Pointers",
+      "String"
+    ],
+    "companies": [
+      "Facebook",
+      "Microsoft"
+    ],
+    "created": "2025-07-05T11:28:01.091101",
+    "filename": "125_Valid_Palindrome.h"
+  }
+}
