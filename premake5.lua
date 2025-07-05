@@ -1,3 +1,5 @@
+include "Dependencies.lua"
+
 workspace "LeetPlusPlus"
     architecture "x64"
     startproject "LeetPlusPlus"
@@ -150,24 +152,27 @@ workspace "LeetPlusPlus"
             "src/**.cpp",
         }
 
-        includedirs {
-            "src"
-        }
+        includedirs { "%{wks.location}/src", "%{wks.location}/vendor" }
+        
+        defines { "USE_TUI" }
 
         filter "configurations:Debug"
             runtime "Debug"
             symbols "on"
             optimize "off"
+            ProcessDependencies("Debug")
         
         filter "configurations:Release"
             runtime "Release"
             optimize "on"
             symbols "on"
+            ProcessDependencies("Release")
         
         filter "configurations:Distribution"
             runtime "Release"
             optimize "full"
             symbols "off"
+            ProcessDependencies("Distribution")
             
         filter "system:windows"
             systemversion "latest"

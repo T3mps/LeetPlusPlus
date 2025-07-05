@@ -72,6 +72,6 @@ void TestProblem125()
     TestRunner::PrintSummary();
 }
 
-REGISTER_SOLUTION(125, "Valid Palindrome", TestProblem125);
+REGISTER_SOLUTION_WITH_DIFFICULTY(125, "Valid Palindrome", TestProblem125, Difficulty::Easy);
 
 #endif // PROBLEM_125_H

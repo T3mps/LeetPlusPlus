@@ -78,6 +78,6 @@ void TestProblem88()
     TestRunner::PrintSummary();
 }
 
-REGISTER_SOLUTION(88, "Merge Sorted Array", TestProblem88);
+REGISTER_SOLUTION_WITH_DIFFICULTY(88, "Merge Sorted Array", TestProblem88, Difficulty::Easy);
 
 #endif // PROBLEM_88_H

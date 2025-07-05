@@ -55,6 +55,6 @@ void TestProblem70()
     TestRunner::PrintSummary();
 }
 
-REGISTER_SOLUTION(70, "Climbing Stairs", TestProblem70);
+REGISTER_SOLUTION_WITH_DIFFICULTY(70, "Climbing Stairs", TestProblem70, Difficulty::Easy);
 
 #endif // PROBLEM_70_H

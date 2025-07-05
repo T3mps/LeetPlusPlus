@@ -65,6 +65,6 @@ void TestProblem9()
     TestRunner::PrintSummary();
 }
 
-REGISTER_SOLUTION(9, "Palindrome Number", TestProblem9);
+REGISTER_SOLUTION_WITH_DIFFICULTY(9, "Palindrome Number", TestProblem9, Difficulty::Easy);
 
 #endif // PROBLEM_9_H

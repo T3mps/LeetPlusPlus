@@ -6,10 +6,19 @@
 #include <string>
 #include <vector>
 
+enum class Difficulty
+{
+    Easy,
+    Medium,
+    Hard
+};
+
 struct ProblemInfo
 {
     int number;
     std::string name;
+    std::string title;  // For display purposes
+    Difficulty difficulty;
     std::function<void()> testFunction;
 };
 
@@ -25,9 +34,9 @@ public:
     SolutionRegistry(const SolutionRegistry&) = delete;
     SolutionRegistry& operator=(const SolutionRegistry&) = delete;
     
-    void RegisterProblem(int number, const std::string& name, std::function<void()> testFunc)
+    void RegisterProblem(int number, const std::string& name, std::function<void()> testFunc, Difficulty difficulty = Difficulty::Medium)
     {
-        m_problems.push_back({number, name, testFunc});
+        m_problems.push_back({number, name, name, difficulty, testFunc});  // Use name as title for now
     }
     
     void RunAll()
@@ -66,6 +75,8 @@ public:
     }
     
     size_t Count() const { return m_problems.size(); }
+    
+    std::vector<ProblemInfo> GetProblemList() const { return GetSortedProblems(); }
 
 private:
     std::vector<ProblemInfo> m_problems;
@@ -99,6 +110,16 @@ private:
         struct Problem##number##Registrar { \
             Problem##number##Registrar() { \
                 SolutionRegistry::GetInstance().RegisterProblem(number, name, testFunc); \
+            } \
+        }; \
+        static Problem##number##Registrar Problem##number##Instance; \
+    }
+
+#define REGISTER_SOLUTION_WITH_DIFFICULTY(number, name, testFunc, difficulty) \
+    namespace { \
+        struct Problem##number##Registrar { \
+            Problem##number##Registrar() { \
+                SolutionRegistry::GetInstance().RegisterProblem(number, name, testFunc, difficulty); \
             } \
         }; \
         static Problem##number##Registrar Problem##number##Instance; \
