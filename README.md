@@ -2,7 +2,8 @@
 
 A professional C++ development framework for LeetCode problem solving, featuring automated problem generation, integrated testing, and an intuitive terminal interface.
 
-![LeetPlusPlus Terminal Interface](.resources/screenshot.png)
+![LeetPlusPlus Terminal Interface A](.resources/screenshot1.png)
+![LeetPlusPlus Terminal Interface B](.resources/screenshot2.png)
 
 ## Overview
 
