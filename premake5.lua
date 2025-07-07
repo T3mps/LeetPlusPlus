@@ -85,6 +85,73 @@ workspace "LeetPlusPlus"
     }
     
     newaction {
+        trigger = "fetch",
+        description = "Fetch a LeetCode problem from the API",
+        execute = function()
+            local slug = _ARGS[1]
+            local cmd = "python leetcode.py fetch"
+            
+            if slug then
+                cmd = cmd .. " " .. slug
+            end
+            
+            print("Fetching problem" .. (slug and (": " .. slug) or " (interactive)") .. "...")
+            os.execute(cmd)
+        end
+    }
+    
+    newaction {
+        trigger = "solve",
+        description = "Fetch a problem and open it in your editor",
+        execute = function()
+            local slug = _ARGS[1]
+            if not slug then
+                print("Usage: premake5 solve <problem-slug>")
+                print("Example: premake5 solve two-sum")
+                return
+            end
+            
+            print("Fetching problem: " .. slug)
+            local result = os.execute("python leetcode.py fetch " .. slug)
+            
+            if result == true or result == 0 then
+                -- Try to open in default editor
+                local files = os.matchfiles("solutions/*_" .. slug:gsub("-", "_") .. ".hpp")
+                if #files > 0 then
+                    print("Opening " .. files[1])
+                    os.execute("start " .. files[1])  -- Windows
+                    -- os.execute("open " .. files[1])  -- macOS
+                    -- os.execute("xdg-open " .. files[1])  -- Linux
+                end
+            end
+        end
+    }
+    
+    newaction {
+        trigger = "test",
+        description = "Run tests for LeetCode solutions",
+        execute = function()
+            local problem = _ARGS[1]
+            local exe = "bin/" .. outputdir .. "/LeetCodeRunner/LeetCodeRunner"
+            
+            if os.host() == "windows" then
+                exe = exe .. ".exe"
+            end
+            
+            if not os.isfile(exe) then
+                print("Error: LeetCodeRunner not built. Run 'premake5 build' first.")
+                return
+            end
+            
+            if problem then
+                os.execute(exe .. " " .. problem)
+            else
+                os.execute(exe)
+            end
+        end
+    }
+    
+    newaction {
         trigger = "quick-add",
         description = "Quickly add a common LeetCode problem",
         execute = function()
@@ -151,6 +218,20 @@ workspace "LeetPlusPlus"
             "src/**.hpp",
             "src/**.cpp",
         }
+        
+        -- Auto-generate main includes file for all problems
+        local problemFiles = os.matchfiles("src/Problems/*.h")
+        if #problemFiles > 0 then
+            local includesContent = "// Auto-generated includes for all problems\n"
+            includesContent = includesContent .. "#pragma once\n\n"
+            
+            for _, file in ipairs(problemFiles) do
+                local filename = path.getname(file)
+                includesContent = includesContent .. '#include "Problems/' .. filename .. '"\n'
+            end
+            
+            io.writefile("src/Problems/AllProblems.h", includesContent)
+        end
 
         includedirs { "%{wks.location}/src", "%{wks.location}/vendor" }
         
@@ -176,3 +257,41 @@ workspace "LeetPlusPlus"
             
         filter "system:windows"
             systemversion "latest"
+    
+    -- New project for the header-only solutions
+    project "LeetCodeRunner"
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        staticruntime "off"
+        
+        targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+        objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+        
+        files {
+            "solutions/main.cpp",
+            "solutions/*.hpp"
+        }
+        
+        includedirs { 
+            "%{wks.location}/include"
+        }
+        
+        filter "configurations:Debug"
+            runtime "Debug"
+            symbols "on"
+            optimize "off"
+        
+        filter "configurations:Release"
+            runtime "Release"
+            optimize "on"
+            symbols "on"
+        
+        filter "configurations:Distribution"
+            runtime "Release"
+            optimize "full"
+            symbols "off"
+            
+        filter "system:windows"
+            systemversion "latest"
+            defines { "_WIN32" }

@@ -1,13 +1,25 @@
+﻿/**
+* ██╗     ███████╗███████╗████████╗                                 
+* ██║     ██╔════╝██╔════╝╚══██╔══╝                                 
+* ██║     █████╗  █████╗     ██║                                    
+* ██║     ██╔══╝  ██╔══╝     ██║                                    
+* ███████╗███████╗███████╗   ██║                                    
+* ╚══════╝╚══════╝╚══════╝   ╚═╝                                    
+*                                                                   
+* ██████╗ ██╗     ██╗   ██╗███████╗██████╗ ██╗     ██╗   ██╗███████╗
+* ██╔══██╗██║     ██║   ██║██╔════╝██╔══██╗██║     ██║   ██║██╔════╝
+* ██████╔╝██║     ██║   ██║███████╗██████╔╝██║     ██║   ██║███████╗
+* ██╔═══╝ ██║     ██║   ██║╚════██║██╔═══╝ ██║     ██║   ██║╚════██║
+* ██║     ███████╗╚██████╔╝███████║██║     ███████╗╚██████╔╝███████║
+* ╚═╝     ╚══════╝ ╚═════╝ ╚══════╝╚═╝     ╚══════╝ ╚═════╝ ╚══════╝
+*/
+
 #include <iostream>
 #include <string>
 #include <limits>
 
 #include "Base/SolutionRegistry.h"
-#include "Problems/9_Palindrome_Number.h"
-#include "Problems/70_Climbing_Stairs.h"
-#include "Problems/88_Merge_Sorted_Array.h"
-#include "Problems/125_Valid_Palindrome.h"
-
+#include "Problems/AllProblems.h"
 #include "UI/Application.h"
 
 int main(int argc, char* argv[])

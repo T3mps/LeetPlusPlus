@@ -26,14 +26,7 @@ void TestProblem${number}()
     Solution${number} solution;
     TestRunner::Start("${title}");
     
-    // TODO: Add test cases using ASSERT_EQ
-    // Examples:
-    // ASSERT_EQ(solution.${method_name}(...), expected_result);
-    // 
-    // For more complex tests:
-    // TEST_CASE("Description of test case");
-    // auto result = solution.${method_name}(...);
-    // ASSERT_EQ(result, expected);
+    ${test_cases}
     
     TestRunner::PrintSummary();
 }

@@ -1,99 +1,25 @@
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
 from datetime import datetime
 from string import Template
 
-STL_TYPES = {
-    'vector', 'string', 'map', 'unordered_map', 'set', 'unordered_set',
-    'pair', 'queue', 'stack', 'priority_queue', 'deque', 'list'
-}
-
-TOPIC_INCLUDES = {
-    'Hash Table': '<unordered_map>',
-    'Binary Tree': '<queue>',
-    'Binary Search': '<algorithm>',
-    'Sorting': '<algorithm>',
-    'Stack': '<stack>',
-    'Queue': '<queue>',
-    'Heap': '<queue>',
-    'Graph': '<vector>',
-    'Dynamic Programming': '<vector>',
-    'Linked List': '<iostream>',
-}
-
-def add_std_prefix(text):
-    if 'std::' in text:
-        return text
-    
-    for stl_type in STL_TYPES:
-        pattern = rf'\b(?<!::){stl_type}(?=\s*<|\b)'
-        text = re.sub(pattern, f'std::{stl_type}', text)
-    
-    return text
-
-def to_pascal_case(name):
-    if name and name[0].islower():
-        return name[0].upper() + name[1:]
-    return name
+sys.path.append(str(Path(__file__).parent))
+from common import ColorPrinter, MetadataManager, ensure_directory, Fore, Style
+from config import (
+    STL_TYPES, TOPIC_INCLUDES, PROBLEMS_DIR, ALL_PROBLEMS_HEADER,
+    TEMPLATE_FILE, METADATA_FILE
+)
+from cpp_types import CppTypeConverter
+from test_parser import TestCaseParser
+from ui_style import UIStyle
 
 def parse_signature(signature):
-    match = re.match(r'^\s*(.+?)\s+(\w+)\s*\((.*)\)\s*$', signature)
-    if not match:
+    sig_data = CppTypeConverter.parse_signature(signature)
+    if not sig_data:
         raise ValueError(f"Invalid signature format: {signature}")
-    
-    raw_return_type = match.group(1).strip()
-    method_name = match.group(2).strip()
-    raw_params = match.group(3).strip()
-    
-    return_type = add_std_prefix(raw_return_type)
-    method_name = to_pascal_case(method_name)
-    
-    params = []
-    params_str = ""
-    
-    if raw_params:
-        param_parts = []
-        current_param = ""
-        angle_bracket_count = 0
-        
-        for char in raw_params:
-            if char == '<':
-                angle_bracket_count += 1
-            elif char == '>':
-                angle_bracket_count -= 1
-            elif char == ',' and angle_bracket_count == 0:
-                param_parts.append(current_param.strip())
-                current_param = ""
-                continue
-            current_param += char
-        
-        if current_param.strip():
-            param_parts.append(current_param.strip())
-        
-        for param in param_parts:
-            param = param.strip()
-            param = add_std_prefix(param)
-            
-            param_match = re.match(r'^(.+?)\s+(\w+)\s*$', param)
-            if param_match:
-                param_type = param_match.group(1).strip()
-                param_name = param_match.group(2).strip()
-                params.append({'type': param_type, 'name': param_name})
-            else:
-                params.append({'type': param, 'name': 'arg' + str(len(params))})
-        
-        params_str = ', '.join(param_parts)
-        params_str = add_std_prefix(params_str)
-    
-    return {
-        'return_type': return_type,
-        'method_name': method_name,
-        'params_str': params_str,
-        'params': params
-    }
+    return sig_data
 
 def get_includes(signature, topics):
     includes = set(['<iostream>'])
@@ -126,40 +52,12 @@ def get_includes(signature, topics):
     local_includes = sorted([inc for inc in includes if inc.startswith('"')])
     return system_includes + local_includes
 
-def get_default_return(return_type):
-    if 'vector' in return_type:
-        return 'return {};'
-    elif 'string' in return_type:
-        return 'return "";'
-    elif return_type == 'int':
-        return 'return 0;'
-    elif return_type == 'bool':
-        return 'return false;'
-    elif return_type in ['double', 'float']:
-        return 'return 0.0;'
-    elif '*' in return_type:
-        return 'return nullptr;'
-    elif return_type == 'void':
-        return '// void return'
-    else:
-        return 'return {}; // TODO: check return type'
+# Default return function moved to cpp_types.py
 
-def load_metadata(file_path='../metadata.json'):
-    script_dir = Path(__file__).parent
-    metadata_path = script_dir / file_path
-    try:
-        with open(metadata_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
+# Test value parsing moved to test_parser.py
+parse_test_value = TestCaseParser.parse_value
 
-def save_metadata(metadata, file_path='../metadata.json'):
-    script_dir = Path(__file__).parent
-    metadata_path = script_dir / file_path
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f, indent=2)
-
-def generate_solution(problem_number, title, signature, difficulty='Medium', topics=None, companies=None):
+def generate_solution(problem_number, title, signature, difficulty='Medium', topics=None, companies=None, test_cases_data=None, force=False):
     sig_data = parse_signature(signature)
     
     includes = get_includes(signature, topics or [])
@@ -167,46 +65,54 @@ def generate_solution(problem_number, title, signature, difficulty='Medium', top
     
     class_name = ''.join(word.capitalize() for word in re.findall(r'\w+', title))
     
-    filename = f"{problem_number}_{'_'.join(word.capitalize() for word in re.findall(r'\w+', title))}.h"
+    title_words = re.findall(r'\w+', title)
+    filename = f"{problem_number}_{'_'.join(word.capitalize() for word in title_words)}.h"
     
-    template_path = Path(__file__).parent / 'template.h'
-    if not template_path.exists():
-        raise FileNotFoundError(f"Template file not found: {template_path}")
+    if not TEMPLATE_FILE.exists():
+        raise FileNotFoundError(f"Template file not found: {TEMPLATE_FILE}")
     
-    template = Template(template_path.read_text())
+    template = Template(TEMPLATE_FILE.read_text(encoding='utf-8'))
     
     test_helpers_include = ""
     if ('Tree' in str(topics) or 'TreeNode' in signature or 
         'LinkedList' in str(topics) or 'ListNode' in signature):
         test_helpers_include = '\n#include "../Common/TestHelpers.h"'
     
-    content = template.substitute(
-        number=problem_number,
-        title=title,
-        difficulty=difficulty,
-        topics=', '.join(topics or []),
-        companies=', '.join(companies or []) or 'Unknown',
-        includes=includes_str,
-        test_helpers_include=test_helpers_include,
-        return_type=sig_data['return_type'],
-        method_name=sig_data['method_name'],
-        params=sig_data['params_str'],
-        default_return=get_default_return(sig_data['return_type'])
-    )
+    # Generate test cases
+    test_cases_code = TestCaseParser.generate_test_code(test_cases_data, sig_data, topics)
     
-    problems_dir = Path('src/Problems')
-    problems_dir.mkdir(parents=True, exist_ok=True)
+    # Create a custom template for safe substitution
+    template_dict = {
+        'number': problem_number,
+        'title': title,
+        'difficulty': difficulty,
+        'topics': ', '.join(topics or []),
+        'companies': ', '.join(companies or []) or 'Unknown',
+        'includes': includes_str,
+        'test_helpers_include': test_helpers_include,
+        'return_type': sig_data['return_type'],
+        'method_name': sig_data['method_name'],
+        'params': sig_data['params_str'],
+        'default_return': CppTypeConverter.get_default_return(sig_data['return_type']),
+        'test_cases': test_cases_code
+    }
     
-    file_path = problems_dir / filename
-    if file_path.exists():
+    content = template.safe_substitute(**template_dict)
+    
+    ensure_directory(PROBLEMS_DIR)
+    
+    file_path = PROBLEMS_DIR / filename
+    if file_path.exists() and not force:
         raise ValueError(f"Problem {problem_number} already exists")
     
-    with open(file_path, 'w') as f:
+    with open(file_path, 'w', encoding='utf-8') as f:
         f.write(content)
     
-    update_main_cpp(problem_number, f"Problems/{filename}")
+    # Update AllProblems.h instead of main.cpp
+    update_all_problems_header(problem_number, filename)
     
-    metadata = load_metadata()
+    metadata_manager = MetadataManager()
+    metadata = metadata_manager.load()
     metadata[str(problem_number)] = {
         'title': title,
         'signature': signature,
@@ -216,55 +122,188 @@ def generate_solution(problem_number, title, signature, difficulty='Medium', top
         'created': datetime.now().isoformat(),
         'filename': filename
     }
-    save_metadata(metadata)
+    metadata_manager.save(metadata)
     
     return filename
 
-def update_main_cpp(problem_number, include_path):
-    main_path = Path('src/main.cpp')
-    if not main_path.exists():
-        print("Warning: main.cpp not found")
-        return
+def update_all_problems_header(problem_number, problem_filename):
+    """Update AllProblems.h to include the new problem header"""
+    all_problems_path = ALL_PROBLEMS_HEADER
     
-    content = main_path.read_text()
-    include_line = f'#include "{include_path}"'
+    # Create the header if it doesn't exist
+    if not all_problems_path.exists():
+        print("Creating AllProblems.h...")
+        all_problems_path.parent.mkdir(parents=True, exist_ok=True)
+        header_content = """#pragma once
+
+// This file is automatically generated by LeetPlusPlus
+// It includes all problem solution headers
+
+"""
+        all_problems_path.write_text(header_content, encoding='utf-8')
     
+    # Read current content
+    content = all_problems_path.read_text(encoding='utf-8')
+    
+    # Check if this problem is already included
+    include_line = f'#include "{problem_filename}"'
     if include_line in content:
         return
     
+    # Find all existing includes and sort them
     lines = content.split('\n')
-    insert_idx = 0
+    header_lines = []
+    include_lines = []
+    other_lines = []
     
-    for i, line in enumerate(lines):
-        if line.strip().startswith('#include'):
-            insert_idx = i + 1
+    for line in lines:
+        if line.strip().startswith('#pragma') or line.strip().startswith('//'):
+            header_lines.append(line)
+        elif line.strip().startswith('#include') and '_' in line and '.h' in line:
+            # This is a problem include
+            include_lines.append(line)
+        else:
+            other_lines.append(line)
     
-    lines.insert(insert_idx, include_line)
-    main_path.write_text('\n'.join(lines))
+    # Add the new include
+    include_lines.append(include_line)
+    
+    # Sort includes by problem number
+    def get_problem_number(include_line):
+        import re
+        match = re.search(r'#include\s+"(\d+)_', include_line)
+        return int(match.group(1)) if match else 0
+    
+    include_lines.sort(key=get_problem_number)
+    
+    # Reconstruct the file
+    new_content = []
+    new_content.extend(header_lines)
+    if header_lines and include_lines:
+        new_content.append('')  # Empty line between header and includes
+    new_content.extend(include_lines)
+    new_content.extend(other_lines)
+    
+    # Write back
+    all_problems_path.write_text('\n'.join(new_content), encoding='utf-8')
+    ColorPrinter.success(f"Updated AllProblems.h with {problem_filename}")
 
 def list_problems():
-    metadata = load_metadata()
+    metadata_manager = MetadataManager()
+    metadata = metadata_manager.load()
     if not metadata:
-        print("No problems found.")
+        ColorPrinter.info("No problems found.")
         return
     
-    print("\nLeetCode Problems:")
-    print("=" * 60)
+    print(UIStyle.header("LeetCode Problems", f"Total: {len(metadata)} problems"))
+    
     for num in sorted(metadata.keys(), key=int):
         prob = metadata[num]
-        print(f"#{num}: {prob['title']} ({prob.get('difficulty', 'Medium')})")
+        
+        # Color code difficulty
+        diff = prob.get('difficulty', 'Medium')
+        if diff == 'Easy':
+            diff_color = Fore.GREEN
+        elif diff == 'Medium':
+            diff_color = Fore.YELLOW
+        else:
+            diff_color = Fore.RED
+        
+        print(f"\n  {Fore.CYAN}#{num}:{Style.RESET_ALL} {prob['title']} {diff_color}({diff}){Style.RESET_ALL}")
         if prob.get('topics'):
-            print(f"      Topics: {', '.join(prob['topics'])}")
-    print("=" * 60)
+            print(f"       Topics: {', '.join(prob['topics'])}")
+    
+    print(UIStyle.footer())
+
+def interactive_mode():
+    """Interactive mode for creating problems"""
+    print(UIStyle.header("LeetCode Problem Generator", "Interactive Mode"))
+    
+    # Load metadata to suggest next problem number
+    metadata_manager = MetadataManager()
+    metadata = metadata_manager.load()
+    existing_numbers = [int(num) for num in metadata.keys()] if metadata else []
+    next_number = max(existing_numbers) + 1 if existing_numbers else 1
+    
+    # Problem number
+    print()
+    number_input = UIStyle.bordered_input(f"Problem number [{next_number}]:").strip()
+    problem_number = int(number_input) if number_input else next_number
+    
+    # Check if problem exists
+    if str(problem_number) in metadata:
+        print(f"⚠️  Problem #{problem_number} already exists: {metadata[str(problem_number)]['title']}")
+        if UIStyle.bordered_input("Overwrite? (y/N):").lower() != 'y':
+            return
+    
+    # Title
+    title = UIStyle.bordered_input("Problem title:").strip()
+    if not title:
+        ColorPrinter.error("Title is required!")
+        return
+    
+    # Show signature examples
+    print(UIStyle.section_header("Example Signatures"))
+    print("  • vector<int> twoSum(vector<int>& nums, int target)")
+    print("  • ListNode* reverseList(ListNode* head)")
+    print("  • bool isValid(string s)")
+    print("  • int maxDepth(TreeNode* root)")
+    
+    print()
+    signature = UIStyle.bordered_input("Method signature:").strip()
+    if not signature:
+        ColorPrinter.error("Signature is required!")
+        return
+    
+    # Difficulty
+    print("\n🎚️  Difficulty levels: Easy, Medium, Hard")
+    diff_input = UIStyle.bordered_input("Difficulty [Medium]:").strip()
+    difficulty = diff_input if diff_input in ['Easy', 'Medium', 'Hard'] else 'Medium'
+    
+    # Topics
+    print(UIStyle.section_header("Common Topics"))
+    print("  • Array, Hash Table, Two Pointers, String, Binary Search")
+    print("  • Stack, Queue, Linked List, Tree, Graph, DP, Greedy")
+    print("  • Math, Bit Manipulation, Recursion, Backtracking")
+    
+    print()
+    topics_input = UIStyle.bordered_input("Topics (comma-separated):").strip()
+    topics = [t.strip() for t in topics_input.split(',')] if topics_input else []
+    
+    # Companies (optional)
+    companies_input = UIStyle.bordered_input("Companies (comma-separated) [optional]:").strip()
+    companies = [c.strip() for c in companies_input.split(',')] if companies_input else []
+    
+    # Confirm
+    print(UIStyle.section_header("Summary"))
+    print(f"  Number: #{problem_number}")
+    print(f"  Title: {title}")
+    print(f"  Signature: {signature}")
+    print(f"  Difficulty: {difficulty}")
+    print(f"  Topics: {', '.join(topics) if topics else 'None'}")
+    print(f"  Companies: {', '.join(companies) if companies else 'None'}")
+    
+    print()
+    if UIStyle.bordered_input("Generate problem? (Y/n):").lower() in ['', 'y']:
+        try:
+            filename = generate_solution(
+                problem_number, title, signature,
+                difficulty, topics, companies
+            )
+            ColorPrinter.success(f"Successfully created: {filename}")
+            ColorPrinter.info(f"Location: src/Problems/{filename}")
+        except Exception as e:
+            ColorPrinter.error(f"Error: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description='LeetCode C++ Solution Generator')
     subparsers = parser.add_subparsers(dest='command', help='Commands')
     
     new_parser = subparsers.add_parser('new', help='Create new problem')
-    new_parser.add_argument('number', type=int, help='Problem number')
-    new_parser.add_argument('-t', '--title', required=True, help='Problem title')
-    new_parser.add_argument('-s', '--signature', required=True, help='Method signature')
+    new_parser.add_argument('number', type=int, nargs='?', help='Problem number')
+    new_parser.add_argument('-i', '--interactive', action='store_true', help='Interactive mode')
+    new_parser.add_argument('-t', '--title', help='Problem title')
+    new_parser.add_argument('-s', '--signature', help='Method signature')
     new_parser.add_argument('-d', '--difficulty', choices=['Easy', 'Medium', 'Hard'], 
                           default='Medium', help='Difficulty')
     new_parser.add_argument('-T', '--topics', nargs='+', help='Topics')
@@ -275,15 +314,19 @@ def main():
     args = parser.parse_args()
     
     if args.command == 'new':
-        try:
-            filename = generate_solution(
-                args.number, args.title, args.signature,
-                args.difficulty, args.topics, args.companies
-            )
-            print(f"✓ Created: {filename}")
-        except Exception as e:
-            print(f"✗ Error: {e}", file=sys.stderr)
-            sys.exit(1)
+        # Use interactive mode if -i flag or if required args are missing
+        if args.interactive or not (args.number and args.title and args.signature):
+            interactive_mode()
+        else:
+            try:
+                filename = generate_solution(
+                    args.number, args.title, args.signature,
+                    args.difficulty, args.topics, args.companies
+                )
+                ColorPrinter.success(f"Created: {filename}")
+            except Exception as e:
+                ColorPrinter.error(f"Error: {e}")
+                sys.exit(1)
     
     elif args.command == 'list':
         list_problems()
