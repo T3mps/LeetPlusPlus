@@ -49,7 +49,6 @@ The modern CLI provides a seamless workflow with a beautiful interface:
 - Company and topic tag tracking
 
 ### Native Terminal UI
-Launch with `lpp run` for a full-screen problem browser:
 - 🟢 Easy problems in green
 - 🟡 Medium problems in yellow
 - 🔴 Hard problems in red
