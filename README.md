@@ -12,28 +12,11 @@ lpp
 
 # Or use direct commands
 lpp fetch 1            # Fetch Two Sum
-lpp list               # Show all problems  
-lpp run                # Launch TUI application
+lpp list               # Show all problems
 lpp update             # Update problem metadata
 ```
 
 ## ✨ Key Features
-
-### Interactive Console Mode
-The modern CLI provides a seamless workflow with a beautiful interface:
-
-```
-╭──────────────────────────────────────────────────────────────────────────╮
-│ ▶ fetch two-sum                                                          │
-╰──────────────────────────────────────────────────────────────────────────╯
-```
-
-**Features:**
-- 🎨 Beautiful bordered prompts and colored output
-- 📊 Progress indicators and status messages
-- 🔄 Auto-start API server when needed
-- 💾 Persistent problem metadata
-- ⚡ Fast problem fetching and generation
 
 ### Automated Problem Management
 - **Fetch by Number**: `fetch 1` - Two Sum
@@ -110,7 +93,6 @@ lpp
 | `generate <id>` | Generate solution file | `generate 42` |
 | `random [difficulty]` | Fetch random problem | `random medium` |
 | `status` | Show system status | `status` |
-| `run` | Launch TUI | `run` |
 | `help` | Show help | `help fetch` |
 | `clear` | Clear screen | `clear` |
 | `exit` | Exit console | `exit` |
@@ -214,7 +196,6 @@ lpp fetch 1 --force  # Overwrite existing solution
 
 Contributions are welcome! Please ensure:
 - Code follows existing style conventions
-- All tests pass
 - Documentation is updated
 - Commit messages are descriptive
 
