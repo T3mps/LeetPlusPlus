@@ -1,6 +1,8 @@
 import argparse
 import re
 import sys
+import subprocess
+import platform
 from pathlib import Path
 from datetime import datetime
 from string import Template
@@ -9,7 +11,7 @@ sys.path.append(str(Path(__file__).parent))
 from common import ColorPrinter, MetadataManager, ensure_directory, Fore, Style
 from config import (
     STL_TYPES, TOPIC_INCLUDES, PROBLEMS_DIR, ALL_PROBLEMS_HEADER,
-    TEMPLATE_FILE, METADATA_FILE
+    TEMPLATE_FILE, METADATA_FILE, PROJECT_ROOT
 )
 from cpp_types import CppTypeConverter
 from test_parser import TestCaseParser
@@ -56,6 +58,32 @@ def get_includes(signature, topics):
 
 # Test value parsing moved to test_parser.py
 parse_test_value = TestCaseParser.parse_value
+
+def regenerate_vs_project():
+    """Regenerate Visual Studio project files if on Windows and premake5 is available"""
+    if platform.system() != 'Windows':
+        return
+    
+    try:
+        # Check if premake5 is available
+        result = subprocess.run(['premake5', '--version'], 
+                              capture_output=True, 
+                              text=True, 
+                              shell=True)
+        
+        if result.returncode == 0:
+            # Run premake5 vs2022 to regenerate project files
+            result = subprocess.run(['premake5', 'vs2022'], 
+                                  cwd=PROJECT_ROOT,
+                                  capture_output=True,
+                                  text=True,
+                                  shell=True)
+            
+            if result.returncode == 0:
+                ColorPrinter.info("✓ VS2022 project updated")
+    except Exception:
+        # Silently fail if premake5 is not available
+        pass
 
 def generate_solution(problem_number, title, signature, difficulty='Medium', topics=None, companies=None, test_cases_data=None, force=False):
     sig_data = parse_signature(signature)
@@ -123,6 +151,9 @@ def generate_solution(problem_number, title, signature, difficulty='Medium', top
         'filename': filename
     }
     metadata_manager.save(metadata)
+    
+    # Regenerate VS project files if on Windows
+    regenerate_vs_project()
     
     return filename
 

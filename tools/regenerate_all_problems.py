@@ -6,6 +6,8 @@ Useful if AllProblems.h gets out of sync or deleted
 
 from pathlib import Path
 import re
+import subprocess
+import platform
 
 def regenerate_all_problems_header():
     """Scan Problems directory and regenerate AllProblems.h"""
@@ -41,6 +43,36 @@ def regenerate_all_problems_header():
     print(f"Regenerated AllProblems.h with {len(problem_files)} problems:")
     for filename in problem_files:
         print(f"  - {filename}")
+    
+    # Regenerate VS project files if on Windows
+    regenerate_vs_project()
+
+def regenerate_vs_project():
+    """Regenerate Visual Studio project files if on Windows and premake5 is available"""
+    if platform.system() != 'Windows':
+        return
+    
+    try:
+        # Check if premake5 is available
+        result = subprocess.run(['premake5', '--version'], 
+                              capture_output=True, 
+                              text=True, 
+                              shell=True)
+        
+        if result.returncode == 0:
+            # Run premake5 vs2022 to regenerate project files
+            project_root = Path(__file__).parent.parent
+            result = subprocess.run(['premake5', 'vs2022'], 
+                                  cwd=project_root,
+                                  capture_output=True,
+                                  text=True,
+                                  shell=True)
+            
+            if result.returncode == 0:
+                print("VS2022 project files regenerated successfully")
+    except Exception:
+        # Silently fail if premake5 is not available
+        pass
 
 if __name__ == "__main__":
     regenerate_all_problems_header()

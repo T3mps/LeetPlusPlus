@@ -84,8 +84,10 @@ def create_gradient_banner():
                 colored_line += color + char
             else:
                 colored_line += ' '
-        gradient_banner += colored_line + "\n"
+        # Reset after each line to prevent color bleeding
+        gradient_banner += colored_line + f"{Style.RESET_ALL}\n"
     
+    # Final reset to ensure clean state
     gradient_banner += f"{Style.RESET_ALL}"
     return gradient_banner
 
@@ -115,7 +117,7 @@ class LeetPlusPlusConsole(cmd.Cmd):
             total = len(self.metadata)
             footer_message = f"{Fore.CYAN}ℹ{Style.RESET_ALL}  Loaded {Fore.GREEN}{total}{Style.RESET_ALL} problems from metadata"
         
-        self.intro = f"""{create_gradient_banner()}
+        self.intro = f"""{create_gradient_banner()}{Style.RESET_ALL}
 
 {Fore.WHITE}{Style.DIM}A professional C++ development framework for LeetCode{Style.RESET_ALL}
 {Fore.BLUE}{'━' * CONSOLE_BANNER_WIDTH}{Style.RESET_ALL}
