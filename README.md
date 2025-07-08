@@ -1,9 +1,8 @@
 # LeetPlusPlus
 
-A professional C++ development framework for LeetCode problem solving, featuring an interactive CLI, automated problem fetching, integrated testing, and a native terminal interface.
+![LPP CLI A](.resources/screenshot0.png)
 
-![LeetPlusPlus Terminal Interface A](.resources/screenshot1.png)
-![LeetPlusPlus Terminal Interface B](.resources/screenshot2.png)
+A professional C++ development framework for LeetCode problem solving, featuring an interactive CLI, automated problem fetching, integrated testing, and a native terminal interface.
 
 ## 🚀 Quick Start
 
@@ -163,6 +162,9 @@ ASSERT_LINKED_LIST_EQ(list1, list2)   // Linked list comparison
 TEST_CASE("Edge case description")
 TestRunner::PrintSummary()
 ```
+
+![LeetPlusPlus Terminal Interface A](.resources/screenshot1.png)
+![LeetPlusPlus Terminal Interface B](.resources/screenshot2.png)
 
 ## 🔧 Configuration
 
